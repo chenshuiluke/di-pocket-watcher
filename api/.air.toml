@@ -2,7 +2,7 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-  cmd = "sqlc generate && go build -o ./tmp/main ."
+  cmd = "sqlc generate && go mod tidy && goose -dir ./db/migrations up && go build -o ./tmp/main ./cmd/server"
   bin = "./tmp/main"
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor"]
