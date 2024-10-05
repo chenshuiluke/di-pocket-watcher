@@ -2,12 +2,19 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-  cmd = "sqlc generate && go mod tidy && goose -dir ./db/migrations up && go build -o ./tmp/main ./cmd/server"
+  cmd = "sqlc generate && go mod tidy && goose -dir ./db/migrations up postgres && go build -o ./tmp/main ./cmd/server"
   bin = "./tmp/main"
   delay = 1000
-  exclude_dir = ["assets", "tmp", "vendor"]
+  exclude_dir = ["assets", "tmp", "vendor", "internal/db"]
   include_ext = ["go", "tpl", "tmpl", "sql"]
   exclude_regex = ["_test\\.go"]
+  follow_symlink = true
+  poll = true
+  poll_interval = 1000 # in milliseconds
 
-[screen]
-  clear_on_rebuild = true
+
+[log]
+  time = true
+
+[misc]
+  clean_on_exit = true
