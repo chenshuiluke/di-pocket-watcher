@@ -2,14 +2,66 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/chenshuiluke/di-pocket-watcher/api/internal/db"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
+
+var (
+	googleOauthConfig *oauth2.Config
+)
+
+func init() {
+	googleOauthConfig = &oauth2.Config{
+		RedirectURL:  "http://localhost:8080/auth/google/callback",
+		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
+		Endpoint:     google.Endpoint,
+	}
+}
+
+func handleGoogleLogin(c *fiber.Ctx) error {
+	url := googleOauthConfig.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+	return c.Redirect(url, fiber.StatusTemporaryRedirect)
+}
+
+func handleGoogleCallback(c *fiber.Ctx) error {
+	code := c.Query("code")
+	token, err := googleOauthConfig.Exchange(c.Context(), code)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to exchange token")
+	}
+
+	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to get user info")
+	}
+	defer resp.Body.Close()
+
+	var userInfo map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to decode user info")
+	}
+
+	// Here you would typically create or update the user in your database
+	// and create a session or JWT token for the user
+
+	return c.JSON(fiber.Map{
+		"message": "Successfully authenticated with Google",
+		"user":    userInfo,
+	})
+}
 
 func main() {
 	ctx := context.Background()
@@ -34,6 +86,9 @@ func main() {
 		}
 		return c.JSON(results)
 	})
+
+	app.Get("/auth/google/login", handleGoogleLogin)
+	app.Get("/auth/google/callback", handleGoogleCallback)
 
 	app.Listen(":8080")
 }
