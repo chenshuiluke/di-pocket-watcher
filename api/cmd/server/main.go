@@ -25,7 +25,7 @@ func init() {
 		RedirectURL:  "http://localhost:8080/auth/google/callback",
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"},
+		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/gmail.readonly"},
 		Endpoint:     google.Endpoint,
 	}
 }
@@ -54,8 +54,7 @@ func handleGoogleCallback(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to decode user info")
 	}
 
-	// Here you would typically create or update the user in your database
-	// and create a session or JWT token for the user
+	// TODO: create or update the user in the db and create session or JWT
 
 	return c.JSON(fiber.Map{
 		"message": "Successfully authenticated with Google",

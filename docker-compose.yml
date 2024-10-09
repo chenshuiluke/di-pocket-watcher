@@ -33,6 +33,8 @@ services:
       - DB_PORT=5432
       - GOOSE_DRIVER=postgres
       - GOOSE_DBSTRING=host=db user=postgres password=di_pocket_watcher dbname=di_pocket_watcher port=5432 sslmode=disable
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
     networks:
       - frontend-network
       - backend-network
