@@ -13,6 +13,7 @@ import {
   Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import { Login } from "./components/Login";
 
 function App() {
   const [opened, { toggle }] = useDisclosure();
@@ -46,7 +47,11 @@ function App() {
               <Skeleton key={index} h={28} mt="sm" animate={false} />
             ))}
         </AppShell.Navbar>
-        <AppShell.Main>Main</AppShell.Main>
+        <AppShell.Main>
+          <Login/>
+
+
+        </AppShell.Main>
       </AppShell>
     </MantineProvider>
   );
