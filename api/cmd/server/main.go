@@ -8,6 +8,7 @@ import (
 	"time"
 
 	connection_manager "github.com/chenshuiluke/di-pocket-watcher/api/internal"
+	"github.com/chenshuiluke/di-pocket-watcher/api/internal/db"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
 
@@ -55,19 +56,38 @@ func handleGoogleCallback(c *fiber.Ctx) error {
 	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to decode user info")
 	}
+	email := userInfo["email"].(string)
+	var user db.User
+	existingUser, err := connection_manager.Mgr.Queries.GetUserByEmail(c.Context(), email)
+	if err == nil {
+		user = db.User{
+			ID:    existingUser.ID,
+			Email: existingUser.Email,
+		}
+	}
+	if (db.User{}) == user {
+		params := db.CreateUserParams{
+			Email: email,
+			Token: token.RefreshToken,
+		}
+		user, err = connection_manager.Mgr.Queries.CreateUser(c.Context(), params)
+		if err != nil {
+			log.Println(err)
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+	}
 
 	// Create the Claims
 	claims := jwt.MapClaims{
-		"name":  "John Doe",
-		"admin": true,
-		"exp":   time.Now().Add(time.Hour * 72).Unix(),
+		"id":  user.ID,
+		"exp": time.Now().Add(time.Hour * 72).Unix(),
 	}
 
 	// Create token
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// Generate encoded token and send it as response.
-	t, err := jwtToken.SignedString([]byte("secret"))
+	t, err := jwtToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}

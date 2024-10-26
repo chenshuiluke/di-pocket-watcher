@@ -11,15 +11,20 @@ import (
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
-  email
+  email, token
 ) VALUES (
-  $1
+  $1, $2
 )
 RETURNING id, email, token
 `
 
-func (q *Queries) CreateUser(ctx context.Context, email string) (User, error) {
-	row := q.db.QueryRow(ctx, createUser, email)
+type CreateUserParams struct {
+	Email string `json:"email"`
+	Token string `json:"token"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, createUser, arg.Email, arg.Token)
 	var i User
 	err := row.Scan(&i.ID, &i.Email, &i.Token)
 	return i, err
@@ -41,13 +46,30 @@ WHERE id = $1 LIMIT 1
 `
 
 type GetUserRow struct {
-	ID    int64
-	Email string
+	ID    int64  `json:"id"`
+	Email string `json:"email"`
 }
 
 func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 	row := q.db.QueryRow(ctx, getUser, id)
 	var i GetUserRow
+	err := row.Scan(&i.ID, &i.Email)
+	return i, err
+}
+
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, email FROM users
+WHERE email = $1 LIMIT 1
+`
+
+type GetUserByEmailRow struct {
+	ID    int64  `json:"id"`
+	Email string `json:"email"`
+}
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	var i GetUserByEmailRow
 	err := row.Scan(&i.ID, &i.Email)
 	return i, err
 }
@@ -58,8 +80,8 @@ ORDER BY id
 `
 
 type ListUsersRow struct {
-	ID    int64
-	Email string
+	ID    int64  `json:"id"`
+	Email string `json:"email"`
 }
 
 func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
@@ -89,8 +111,8 @@ WHERE id = $1
 `
 
 type UpdateUserParams struct {
-	ID    int64
-	Email string
+	ID    int64  `json:"id"`
+	Email string `json:"email"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
