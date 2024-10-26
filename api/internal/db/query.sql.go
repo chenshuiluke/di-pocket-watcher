@@ -7,28 +7,21 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
-  email, password
+  email
 ) VALUES (
-  $1, $2
+  $1
 )
-RETURNING id, email, password
+RETURNING id, email, token
 `
 
-type CreateUserParams struct {
-	Email    string
-	Password pgtype.Text
-}
-
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.Email, arg.Password)
+func (q *Queries) CreateUser(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRow(ctx, createUser, email)
 	var i User
-	err := row.Scan(&i.ID, &i.Email, &i.Password)
+	err := row.Scan(&i.ID, &i.Email, &i.Token)
 	return i, err
 }
 
@@ -91,18 +84,16 @@ func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 
 const updateUser = `-- name: UpdateUser :exec
 UPDATE users
-  set email = $2,
-  password = $3
+  set email = $2
 WHERE id = $1
 `
 
 type UpdateUserParams struct {
-	ID       int64
-	Email    string
-	Password pgtype.Text
+	ID    int64
+	Email string
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
-	_, err := q.db.Exec(ctx, updateUser, arg.ID, arg.Email, arg.Password)
+	_, err := q.db.Exec(ctx, updateUser, arg.ID, arg.Email)
 	return err
 }

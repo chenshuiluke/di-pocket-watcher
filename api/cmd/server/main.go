@@ -1,19 +1,20 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
-	"github.com/chenshuiluke/di-pocket-watcher/api/internal/db"
+	connection_manager "github.com/chenshuiluke/di-pocket-watcher/api/internal"
 	"github.com/gofiber/fiber/v2"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/golang-jwt/jwt"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+
+	jwtware "github.com/gofiber/contrib/jwt"
 )
 
 var (
@@ -28,6 +29,7 @@ func init() {
 		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/gmail.readonly"},
 		Endpoint:     google.Endpoint,
 	}
+
 }
 
 func handleGoogleLogin(c *fiber.Ctx) error {
@@ -54,32 +56,32 @@ func handleGoogleCallback(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to decode user info")
 	}
 
-	// TODO: create or update the user in the db and create session or JWT
+	// Create the Claims
+	claims := jwt.MapClaims{
+		"name":  "John Doe",
+		"admin": true,
+		"exp":   time.Now().Add(time.Hour * 72).Unix(),
+	}
 
-	return c.JSON(fiber.Map{
-		"message": "Successfully authenticated with Google",
-		"user":    userInfo,
-	})
+	// Create token
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Generate encoded token and send it as response.
+	t, err := jwtToken.SignedString([]byte("secret"))
+	if err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+
+	return c.JSON(fiber.Map{"token": t})
 }
 
 func main() {
-	ctx := context.Background()
-	url := fmt.Sprintf("postgres://%s:%s@%s:5432/%s", os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_HOST"), os.Getenv("DB_NAME"))
-
-	conn, err := pgxpool.New(ctx, url)
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
-	}
-
-	defer conn.Close()
 
 	app := fiber.New()
 
 	app.Get("/", func(c *fiber.Ctx) error {
-		queries := db.New(conn)
-		results, err := queries.ListUsers(ctx)
+
+		results, err := connection_manager.Mgr.Queries.ListUsers(c.Context())
 		if err != nil {
 			log.Println(err)
 		}
@@ -88,6 +90,10 @@ func main() {
 
 	app.Get("/auth/google/login", handleGoogleLogin)
 	app.Get("/auth/google/callback", handleGoogleCallback)
+
+	app.Use(jwtware.New(jwtware.Config{
+		SigningKey: jwtware.SigningKey{Key: []byte(os.Getenv("JWT_SECRET"))},
+	}))
 
 	app.Listen(":8080")
 }

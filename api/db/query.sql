@@ -8,16 +8,15 @@ ORDER BY id;
 
 -- name: CreateUser :one
 INSERT INTO users (
-  email, password
+  email
 ) VALUES (
-  $1, $2
+  $1
 )
 RETURNING *;
 
 -- name: UpdateUser :exec
 UPDATE users
-  set email = $2,
-  password = $3
+  set email = $2
 WHERE id = $1;
 
 -- name: DeleteUser :exec
