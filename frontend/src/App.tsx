@@ -1,6 +1,9 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+} from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import "./App.css";
 import "@mantine/core/styles.css";
 
@@ -16,8 +19,10 @@ import { useDisclosure } from "@mantine/hooks";
 import { Login } from "./components/Login";
 
 function App() {
+  const queryClient = new QueryClient()
   const [opened, { toggle }] = useDisclosure();
   return (
+    <QueryClientProvider client={queryClient}>
     <MantineProvider>
       <AppShell
         header={{ height: 60 }}
@@ -54,6 +59,7 @@ function App() {
         </AppShell.Main>
       </AppShell>
     </MantineProvider>
+    </QueryClientProvider>
   );
 }
 
