@@ -8,7 +8,6 @@ RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 RUN go install github.com/air-verse/air@latest
 
 # Install goose
-
 RUN go install github.com/pressly/goose/v3/cmd/goose@latest
 
 # Set the working directory
@@ -19,7 +18,6 @@ COPY go.mod go.sum ./
 
 # Download all dependencies
 RUN go mod download
-
 RUN go mod tidy
 
 # Copy the source code
@@ -28,5 +26,9 @@ COPY . .
 # Run sqlc generate
 RUN sqlc generate
 
+# Create a startup script
+COPY ./scripts/start.sh /start.sh
+RUN chmod +x /start.sh
+
 # Command to run the application
-CMD ["./wait-for-it.sh", "db:5432", "--","air", "-c", ".air.toml"]
+CMD ["/start.sh"]

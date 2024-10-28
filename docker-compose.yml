@@ -22,7 +22,8 @@ services:
     volumes:
       - ./api:/app
     depends_on:
-      - db
+      db:
+        condition: service_healthy  # Wait for db to be healthy
     environment:
       - DB_HOST=db
       - DB_USER=postgres
@@ -48,6 +49,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - backend-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   postgres_data:
