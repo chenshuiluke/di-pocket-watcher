@@ -1,6 +1,9 @@
 # Start from the official Go image
 FROM golang:1.23
 
+# Install PostgreSQL client
+RUN apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*
+
 # Install sqlc
 RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 
