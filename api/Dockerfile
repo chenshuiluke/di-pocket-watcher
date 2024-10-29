@@ -27,7 +27,7 @@ RUN go mod tidy
 COPY . .
 
 # Run sqlc generate
-RUN sqlc generate
+RUN sqlc generate && go mod tidy && go build -o ./tmp/main ./cmd/server
 
 # Create a startup script
 COPY ./scripts/start.sh ./start.sh

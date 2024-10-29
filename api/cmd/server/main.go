@@ -7,12 +7,13 @@ import (
 	"github.com/chenshuiluke/di-pocket-watcher/api/internal/controllers"
 	"github.com/chenshuiluke/di-pocket-watcher/api/internal/routes"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func main() {
 
 	app := fiber.New()
-
+	app.Use(cors.New())
 	app.Get("/", func(c *fiber.Ctx) error {
 
 		results, err := connection_manager.Mgr.Queries.ListUsers(c.Context())
@@ -27,6 +28,8 @@ func main() {
 	authController := controllers.AuthController{}
 
 	routes.AuthRoutes(authGroup, authController)
+
+	//TODO: Make CORS more strict in future
 
 	app.Listen(":8080")
 }

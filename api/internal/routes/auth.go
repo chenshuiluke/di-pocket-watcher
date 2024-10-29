@@ -7,7 +7,7 @@ import (
 )
 
 func AuthRoutes(group fiber.Router, ac controllers.AuthController) {
-	group.Get("/", middlewares.Jwt, ac.GetCurrentUser)
+	group.Get("/", middlewares.Jwt(), ac.GetCurrentUser)
 	group.Get("/google/login", ac.HandleGoogleLogin)
 	group.Get("/google/callback", ac.HandleGoogleCallback)
 }
