@@ -14,7 +14,7 @@ RUN go install github.com/air-verse/air@latest
 RUN go install github.com/pressly/goose/v3/cmd/goose@latest
 
 # Set the working directory
-WORKDIR /app
+WORKDIR /api
 
 # Copy go mod and sum files
 COPY go.mod go.sum ./
@@ -30,8 +30,5 @@ COPY . .
 RUN sqlc generate
 
 # Create a startup script
-COPY ./scripts/start.sh /start.sh
-RUN chmod +x /start.sh
-
-# Command to run the application
-CMD ["/start.sh"]
+COPY ./scripts/start.sh ./start.sh
+RUN chmod +x ./start.sh
