@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/base64"
 	"os"
+	"strings"
 
 	connection_manager "github.com/chenshuiluke/di-pocket-watcher/api/internal"
 	"github.com/gofiber/fiber/v2"
@@ -16,6 +17,8 @@ import (
 
 type TransactionAnalysisController struct {
 }
+
+var bankTransactionNotificationSenderEmailAddresses = []string{"no-reply-ncbcardalerts@jncb.com"}
 
 func init() {
 	googleOauthConfig = &oauth2.Config{
@@ -60,17 +63,47 @@ func (TransactionAnalysisController) GetTransactionEmails(c *fiber.Ctx) error {
 		log.Error("Failed to retrieve the emails")
 	}
 	for _, record := range response.Messages {
-		email, err := gmailService.Users.Messages.Get("me", record.Id).Format("full").Do()
+		// Get only metadata first
+		email, err := gmailService.Users.Messages.Get("me", record.Id).Format("metadata").Fields("payload/headers").Do()
 		if err != nil || email == nil {
-			log.Error("Failed to retrieve email:", err)
+			log.Error("Failed to retrieve email metadata:", err)
+			continue
+		}
+
+		// Find the "From" header
+		var fromAddress string
+		for _, header := range email.Payload.Headers {
+			if header.Name == "From" {
+				fromAddress = header.Value
+				break
+			}
+		}
+
+		// Check if the sender is in the allowed list
+		senderFound := false
+		for _, allowedSender := range bankTransactionNotificationSenderEmailAddresses {
+			if strings.Contains(fromAddress, allowedSender) {
+				senderFound = true
+				break
+			}
+		}
+
+		if !senderFound {
+			continue
+		}
+
+		// Now get the full email only if it's from a bank sender
+		fullEmail, err := gmailService.Users.Messages.Get("me", record.Id).Format("full").Do()
+		if err != nil || fullEmail == nil {
+			log.Error("Failed to retrieve full email:", err)
 			continue
 		}
 
 		// Get the email body
 		var body string
-		if len(email.Payload.Parts) > 0 {
+		if len(fullEmail.Payload.Parts) > 0 {
 			// Multipart message
-			for _, part := range email.Payload.Parts {
+			for _, part := range fullEmail.Payload.Parts {
 				if part.MimeType == "text/plain" {
 					if data, err := base64.URLEncoding.DecodeString(part.Body.Data); err == nil {
 						body = string(data)
@@ -78,9 +111,9 @@ func (TransactionAnalysisController) GetTransactionEmails(c *fiber.Ctx) error {
 					}
 				}
 			}
-		} else if email.Payload.Body.Data != "" {
+		} else if fullEmail.Payload.Body.Data != "" {
 			// Single part message
-			if data, err := base64.URLEncoding.DecodeString(email.Payload.Body.Data); err == nil {
+			if data, err := base64.URLEncoding.DecodeString(fullEmail.Payload.Body.Data); err == nil {
 				body = string(data)
 			}
 		}
