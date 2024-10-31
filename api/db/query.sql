@@ -2,6 +2,10 @@
 SELECT id, email FROM users
 WHERE id = $1 LIMIT 1;
 
+-- name: GetUserToken :one
+SELECT id, token FROM users
+WHERE id = $1 LIMIT 1;
+
 -- name: GetUserByEmail :one
 SELECT id, email FROM users
 WHERE email = $1 LIMIT 1;

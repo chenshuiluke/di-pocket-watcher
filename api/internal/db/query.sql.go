@@ -74,6 +74,23 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 	return i, err
 }
 
+const getUserToken = `-- name: GetUserToken :one
+SELECT id, token FROM users
+WHERE id = $1 LIMIT 1
+`
+
+type GetUserTokenRow struct {
+	ID    int64  `json:"id"`
+	Token string `json:"token"`
+}
+
+func (q *Queries) GetUserToken(ctx context.Context, id int64) (GetUserTokenRow, error) {
+	row := q.db.QueryRow(ctx, getUserToken, id)
+	var i GetUserTokenRow
+	err := row.Scan(&i.ID, &i.Token)
+	return i, err
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT id, email FROM users
 ORDER BY id

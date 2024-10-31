@@ -29,6 +29,11 @@ func main() {
 
 	routes.AuthRoutes(authGroup, authController)
 
+	transactionAnalysisGroup := apiGroup.Group("/transaction-analysis")
+	transactionAnalysisController := controllers.TransactionAnalysisController{}
+
+	routes.TransactionAnalysisRoutes(transactionAnalysisGroup, transactionAnalysisController)
+
 	//TODO: Make CORS more strict in future
 
 	app.Listen(":8080")
