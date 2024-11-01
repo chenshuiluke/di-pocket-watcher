@@ -13,6 +13,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { Login } from "./components/Login";
 import { QueryProvider } from "./lib/providers/query-provider";
 import { useCurrentUser } from "./features/auth/api/auth";
+import Transactions from "./components/Transactions";
 
 function AppContent() {
   const [opened, { toggle }] = useDisclosure();
@@ -47,7 +48,7 @@ function AppContent() {
           ))}
       </AppShell.Navbar>
       <AppShell.Main>
-        {!user ? <Login /> : <div>Welcome, {user.email}!</div>}
+        {!user ? <Login /> : <Transactions/>}
       </AppShell.Main>
     </AppShell>
   );
